@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1769e0">
+<link rel="manifest" href="manifest.json">
+<title>俱乐部下单</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f4f7fb;color:#172033;font-family:Arial,"Microsoft YaHei",sans-serif}
+header{background:linear-gradient(135deg,#1769e0,#2497f3);color:#fff;padding:28px 18px 30px;border-radius:0 0 26px 26px}
+.brand{font-size:25px;font-weight:800}.desc{opacity:.88;margin-top:6px;font-size:14px}
+main{max-width:760px;margin:auto;padding:15px 15px 88px}.card{background:#fff;border-radius:18px;padding:16px;margin:12px 0;box-shadow:0 5px 18px #12213b0d}
+.title{font-size:18px;font-weight:800;margin:3px 0 12px}.notice{display:flex;gap:10px;align-items:center}
+.badge{display:inline-block;background:#eaf3ff;color:#1769e0;padding:5px 10px;border-radius:99px;font-size:12px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.service{border:1px solid #e6eaf0;border-radius:16px;padding:14px}
+.service b{font-size:15px}.price{font-weight:800;color:#1769e0;margin:8px 0}
+button{border:0;border-radius:12px;background:#1769e0;color:#fff;padding:11px 14px;font-weight:700;width:100%}
+.secondary{background:#eef3f9;color:#26364e}.danger{background:#ef4444}
+nav{position:fixed;z-index:9;left:0;right:0;bottom:0;background:#fff;border-top:1px solid #e4e8ef;display:flex;justify-content:space-around;padding:9px 4px calc(9px + env(safe-area-inset-bottom))}
+nav button{background:transparent;color:#7b8494;width:auto;padding:7px 17px}.active{color:#1769e0!important}
+.page.hide{display:none}.row{display:flex;justify-content:space-between;gap:12px;align-items:center}
+input,textarea,select{width:100%;border:1px solid #d8dee8;border-radius:12px;padding:12px;margin:6px 0 12px;background:#fff}
+.modal{position:fixed;inset:0;background:#0008;z-index:20;padding:18px;overflow:auto}.modal.hide{display:none}
+.modal .card{max-width:700px;margin:45px auto}.order{padding:13px 0;border-bottom:1px solid #edf0f4}.muted{color:#7b8494;font-size:13px}
+.install{display:none;margin-top:12px}.install.show{display:block}
+@media(max-width:420px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header><div class="brand">🎮 俱乐部下单</div><div class="desc">安全下单 · 服务清晰 · 订单可追踪</div></header>
+
+<main>
+<section id="home" class="page">
+<div class="card notice"><span class="badge">公告</span><span>欢迎来到俱乐部下单中心。</span></div>
+<div class="card install" id="installBox"><b>安装到手机</b><p class="muted">可以把本站添加到主屏幕，像普通 App 一样打开。</p><button onclick="installApp()">安装 App</button></div>
+<div class="title">热门服务</div>
+<div class="grid">
+<div class="service"><b>🎯 游戏护航</b><div class="price">RM 10 起</div><button onclick="openOrder('游戏护航','10')">立即下单</button></div>
+<div class="service"><b>⚡ 代肝服务</b><div class="price">RM 15 起</div><button onclick="openOrder('代肝服务','15')">立即下单</button></div>
+<div class="service"><b>🎧 陪玩服务</b><div class="price">RM 8 起</div><button onclick="openOrder('陪玩服务','8')">立即下单</button></div>
+<div class="service"><b>🏆 定制任务</b><div class="price">联系客服</div><button onclick="openOrder('定制任务','0')">咨询下单</button></div>
+</div>
+</section>
+
+<section id="orders" class="page hide"><div class="title">我的订单</div><div id="orderList" class="card">暂无订单</div></section>
+
+<section id="me" class="page hide">
+<div class="card"><div class="title">我的账户</div><div class="row"><span>登录状态</span><span class="badge">游客</span></div></div>
+<div class="card"><div class="title">联系客服</div><p class="muted">付款、订单或服务问题可以联系客服。</p><button onclick="alert('客服功能将在接入后台后启用')">联系客服</button></div>
+</section>
+</main>
+
+<div id="modal" class="modal hide">
+<div class="card">
+<div class="row"><div class="title">提交订单</div><button class="secondary" style="width:auto" onclick="closeOrder()">关闭</button></div>
+<div id="chosen" class="badge"></div>
+<label>游戏名称</label><input id="game" placeholder="例如：Delta Force">
+<label>游戏 UID / ID</label><input id="uid" placeholder="填写游戏 UID">
+<label>服务数量/时长</label><input id="amount" type="number" min="1" value="1">
+<label>备注</label><textarea id="note" rows="3" placeholder="填写要求"></textarea>
+<button onclick="submitOrder()">提交订单</button>
+</div></div>
+
+<nav>
+<button class="active" onclick="tab('home',this)">🏠 首页</button>
+<button onclick="tab('orders',this)">📦 订单</button>
+<button onclick="tab('me',this)">👤 我的</button>
+</nav>
+
+<script>
+let selected='',price=0;
+let orders=JSON.parse(localStorage.getItem('club_orders')||'[]');
+let deferredPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;document.getElementById('installBox').classList.add('show')});
+function tab(id,btn){document.querySelectorAll('.page').forEach(x=>x.classList.add('hide'));document.getElementById(id).classList.remove('hide');document.querySelectorAll('nav button').forEach(x=>x.classList.remove('active'));btn.classList.add('active');if(id==='orders')renderOrders()}
+function openOrder(name,p){selected=name;price=Number(p);document.getElementById('chosen').textContent=name+(price?' · RM '+price+' 起':'');document.getElementById('modal').classList.remove('hide')}
+function closeOrder(){document.getElementById('modal').classList.add('hide')}
+function submitOrder(){
+ const game=document.getElementById('game').value.trim(),uid=document.getElementById('uid').value.trim(),note=document.getElementById('note').value.trim(),qty=Math.max(1,Number(document.getElementById('amount').value)||1);
+ if(!game||!uid){alert('请填写游戏名称和 UID');return}
+ const o={id:'CL'+Date.now().toString().slice(-8),service:selected,game,uid,note,qty,price:price*qty,status:'待付款',created:new Date().toLocaleString('zh-CN')};
+ orders.unshift(o);localStorage.setItem('club_orders',JSON.stringify(orders));closeOrder();alert('订单创建成功：'+o.id);tab('orders',document.querySelectorAll('nav button')[1])
+}
+function renderOrders(){
+ const e=document.getElementById('orderList');
+ if(!orders.length){e.innerHTML='暂无订单';return}
+ e.innerHTML=orders.map(o=>`<div class="order"><b>${o.service}</b><br><span class="muted">订单号：${o.id}<br>游戏：${o.game}　UID：${o.uid}<br>数量：${o.qty}　金额：${o.price?'RM '+o.price:'待报价'}<br>${o.created}</span><br><span class="badge">${o.status}</span></div>`).join('')
+}
+async function installApp(){if(!deferredPrompt){alert('请在浏览器菜单中选择“添加到主屏幕”');return}deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null}
+if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js'));
+</script>
+</body></html>
